@@ -4,13 +4,13 @@
   "version": "0.0.0",
   "type": "commonjs",
   "scripts": {
-    "dev": "concurrently \"npm run client:dev\" \"npm run server:dev\"",
+    "dev": "concurrently \"npm run client:dev\" \"npm run api:dev\"",
     "client:dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "server:dev": "ts-node-dev --respawn --transpile-only --project tsconfig.server.json server/index.ts",
-    "server:start": "node dist-server/index.js",
-    "server:build": "tsc -p tsconfig.server.json"
+    "api:dev": "ts-node-dev --respawn --transpile-only --project tsconfig.api.json api/index.ts",
+    "api:start": "node dist-api/index.js",
+    "api:build": "tsc -p tsconfig.api.json"
   },
   "dependencies": {
     "react": "^19.2.4",

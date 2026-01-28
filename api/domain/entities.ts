@@ -1,4 +1,7 @@
-// Định nghĩa domain models dùng chung giữa các layer.
+/**
+ * Domain entities – không phụ thuộc layer nào khác.
+ * Định nghĩa models dùng chung trong toàn bộ API.
+ */
 
 export interface PerformanceMetric {
   name: string;
@@ -52,7 +55,6 @@ export interface GlobalStats {
   directShare: number;
 }
 
-// Cấu trúc "database" JSON tổng thể.
 export interface AnalyticsDatabase {
   ratePlans: PerformanceMetric[];
   channelMix: ChannelMixItem[];
@@ -61,4 +63,3 @@ export interface AnalyticsDatabase {
   scatter: ScatterItem[];
   globalStats: GlobalStats;
 }
-

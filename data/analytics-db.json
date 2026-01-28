@@ -1,0 +1,14 @@
+{
+  "ratePlans": [],
+  "channelMix": [],
+  "trend": [],
+  "topProblems": [],
+  "scatter": [],
+  "globalStats": {
+    "totalRevenue": 0,
+    "avgADR": 0,
+    "avgCancelRate": 0,
+    "directShare": 0
+  }
+}
+

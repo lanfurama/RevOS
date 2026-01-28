@@ -4,9 +4,20 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   ScatterChart, Scatter, ZAxis, Cell
 } from 'recharts';
-import { channelMixData, scatterData } from '../services/mockData';
+import { channelMixData, scatterData, mostCancelPlanData, RATE_PLAN_IDS } from '../services/mockData';
 import { useData } from '../context/DataContext';
 import { formatCurrency } from '../utils/helpers';
+
+// Heatmap: map cancel % (min~max) to background color (light tan → dark red)
+const CANCEL_MIN = 6;
+const CANCEL_MAX = 24;
+function getHeatmapColor(pct: number): string {
+  const t = Math.max(0, Math.min(1, (pct - CANCEL_MIN) / (CANCEL_MAX - CANCEL_MIN)));
+  const r = Math.round(253 - t * 120);
+  const g = Math.round(230 - t * 180);
+  const b = Math.round(200 - t * 150);
+  return `rgb(${r},${g},${b})`;
+}
 
 export const ChannelPerformance: React.FC = () => {
   const { topProblems } = useData();
@@ -151,6 +162,53 @@ export const ChannelPerformance: React.FC = () => {
           </div>
         </div>
 
+      </div>
+
+      {/* Most Cancel Plan – heatmap by Channel × Rate Plan */}
+      <div className="bg-white p-4 border border-gray-300 rounded shadow-sm">
+        <h3 className="text-sm font-semibold text-gray-700 mb-3">Most Cancel Plan</h3>
+        <div className="overflow-auto">
+          <table className="w-full border-collapse min-w-[420px]">
+            <thead>
+              <tr className="text-gray-500 border-b border-gray-200 text-[11px]">
+                <th className="text-left font-medium pb-2 pt-1 w-[28%] pl-1">Channel Name</th>
+                {RATE_PLAN_IDS.map((id) => (
+                  <th key={id} className="text-center font-medium pb-2 pt-1 w-[18%]">{id}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody className="text-[11px]">
+              {mostCancelPlanData.map((row, idx) => (
+                <tr key={idx} className="border-b border-gray-100 hover:bg-gray-50/50">
+                  <td className="py-2 pl-1 text-gray-700 font-medium align-middle">{row.channel}</td>
+                  {RATE_PLAN_IDS.map((planId) => {
+                    const value = row[planId as keyof typeof row] as number;
+                    const bg = getHeatmapColor(value);
+                    return (
+                      <td
+                        key={planId}
+                        className="py-2 text-center font-medium align-middle"
+                        style={{ backgroundColor: bg }}
+                        title={`${value}%`}
+                      >
+                        {value}%
+                      </td>
+                    );
+                  })}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <div className="flex items-center gap-4 mt-2 text-[10px] text-gray-500">
+          <span>Low</span>
+          <div className="flex-1 h-3 rounded overflow-hidden flex">
+            {[6, 10, 14, 18, 24].map((pct) => (
+              <div key={pct} className="flex-1" style={{ backgroundColor: getHeatmapColor(pct) }} title={`${pct}%`} />
+            ))}
+          </div>
+          <span>High</span>
+        </div>
       </div>
     </div>
   );

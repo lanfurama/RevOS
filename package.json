@@ -2,13 +2,13 @@
   "name": "revos",
   "private": true,
   "version": "0.0.0",
-  "type": "module",
+  "type": "commonjs",
   "scripts": {
     "dev": "concurrently \"npm run client:dev\" \"npm run server:dev\"",
     "client:dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "server:dev": "ts-node-dev --respawn --transpile-only server/index.ts",
+    "server:dev": "ts-node-dev --respawn --transpile-only --project tsconfig.server.json server/index.ts",
     "server:start": "node dist-server/index.js",
     "server:build": "tsc -p tsconfig.server.json"
   },

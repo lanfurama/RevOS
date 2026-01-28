@@ -90,3 +90,25 @@ export const globalStats = {
   avgCancelRate: 0.1528,
   directShare: 0.3281
 };
+
+// Most Cancel Plan: heatmap data (Channel × Rate Plan → cancellation %)
+export const RATE_PLAN_IDS = ['RP_BAR', 'RP_CORP', 'RP_NRF', 'RP_PKG'] as const;
+export type RatePlanId = typeof RATE_PLAN_IDS[number];
+
+export interface MostCancelPlanRow {
+  channel: string;
+  RP_BAR: number;
+  RP_CORP: number;
+  RP_NRF: number;
+  RP_PKG: number;
+}
+
+export const mostCancelPlanData: MostCancelPlanRow[] = [
+  { channel: 'Agoda', RP_BAR: 20.1, RP_CORP: 18.5, RP_NRF: 11.9, RP_PKG: 16.0 },
+  { channel: 'Booking.com', RP_BAR: 19.8, RP_CORP: 17.5, RP_NRF: 13.1, RP_PKG: 21.1 },
+  { channel: 'Corporate Contract', RP_BAR: 15.1, RP_CORP: 18.9, RP_NRF: 8.2, RP_PKG: 18.5 },
+  { channel: 'Direct - Phone/Walk-in', RP_BAR: 12.3, RP_CORP: 11.4, RP_NRF: 6.2, RP_PKG: 9.5 },
+  { channel: 'Direct - Website', RP_BAR: 13.2, RP_CORP: 13.4, RP_NRF: 7.0, RP_PKG: 16.3 },
+  { channel: 'Expedia', RP_BAR: 21.9, RP_CORP: 14.5, RP_NRF: 14.0, RP_PKG: 23.4 },
+  { channel: 'Wholesale/Tour Operator', RP_BAR: 12.0, RP_CORP: 16.7, RP_NRF: 9.1, RP_PKG: 12.7 },
+];

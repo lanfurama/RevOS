@@ -7,6 +7,7 @@ import {
 import { channelMixData, scatterData, mostCancelPlanData, RATE_PLAN_IDS } from '../services/mockData';
 import { useData } from '../context/DataContext';
 import { formatCurrency } from '../utils/helpers';
+import { EmptyState } from './EmptyState';
 
 // Heatmap: map cancel % (min~max) to background color (light tan → dark red)
 const CANCEL_MIN = 6;
@@ -19,7 +20,11 @@ function getHeatmapColor(pct: number): string {
   return `rgb(${r},${g},${b})`;
 }
 
-export const ChannelPerformance: React.FC = () => {
+interface ChannelPerformanceProps {
+  onNavigateToData?: () => void;
+}
+
+export const ChannelPerformance: React.FC<ChannelPerformanceProps> = ({ onNavigateToData }) => {
   const { topProblems } = useData();
 
   // Dynamic max calculation for bars to look relative to current data
@@ -114,11 +119,11 @@ export const ChannelPerformance: React.FC = () => {
         <div className="bg-white p-4 border border-gray-300 rounded shadow-sm flex flex-col h-full">
           <h3 className="text-sm font-semibold text-gray-700 mb-3">Top Problems</h3>
           
-          <div className="overflow-auto flex-1">
-            <table className="w-full border-collapse table-fixed">
+          <div className="overflow-auto flex-1 -mx-1 px-1">
+            <table className="w-full border-collapse table-fixed min-w-[380px]">
               <thead>
                 <tr className="text-gray-500 border-b border-gray-200 text-[11px] align-bottom leading-tight">
-                  <th className="text-left font-medium pb-2 w-[22%] pl-1">Channel<br/>Name</th>
+                  <th className="text-left font-medium pb-2 w-[22%] pl-1 sticky left-0 z-10 bg-white shadow-[2px_0_4px_-2px_rgba(0,0,0,0.1)]">Channel<br/>Name</th>
                   <th className="text-left font-medium pb-2 w-[18%]">Rate Plan</th>
                   <th className="text-right font-medium pb-2 w-[20%]">Commission<br/>A..</th>
                   <th className="text-right font-medium pb-2 w-[25%]">Net<br/>Revenue a..</th>
@@ -128,12 +133,19 @@ export const ChannelPerformance: React.FC = () => {
               <tbody className="text-[11px]">
                 {topProblems.length === 0 ? (
                   <tr>
-                    <td colSpan={5} className="py-8 text-center text-gray-400 italic">No data. Please import in Data Management.</td>
+                    <td colSpan={5} className="p-0 align-top">
+                      <EmptyState
+                        title="No data"
+                        description="Import CSV in Data Management to see Top Problems here."
+                        actionLabel="Go to Data Management"
+                        onAction={onNavigateToData}
+                      />
+                    </td>
                   </tr>
                 ) : (
                   topProblems.map((row, idx) => (
                     <tr key={idx} className="border-b border-gray-100 hover:bg-gray-50 group">
-                      <td className="py-2 pl-1 text-gray-700 truncate font-medium" title={row.channel}>{row.channel}</td>
+                      <td className="py-2 pl-1 text-gray-700 truncate font-medium sticky left-0 z-[1] bg-white group-hover:bg-gray-50" title={row.channel}>{row.channel}</td>
                       <td className="py-2 text-gray-500 truncate" title={row.ratePlan}>{row.ratePlan}</td>
                       
                       {/* Data Bar: Commission */}
@@ -167,11 +179,11 @@ export const ChannelPerformance: React.FC = () => {
       {/* Most Cancel Plan – heatmap by Channel × Rate Plan */}
       <div className="bg-white p-4 border border-gray-300 rounded shadow-sm">
         <h3 className="text-sm font-semibold text-gray-700 mb-3">Most Cancel Plan</h3>
-        <div className="overflow-auto">
+        <div className="overflow-x-auto -mx-1 px-1">
           <table className="w-full border-collapse min-w-[420px]">
             <thead>
               <tr className="text-gray-500 border-b border-gray-200 text-[11px]">
-                <th className="text-left font-medium pb-2 pt-1 w-[28%] pl-1">Channel Name</th>
+                <th className="text-left font-medium pb-2 pt-1 w-[28%] pl-1 sticky left-0 z-10 bg-white shadow-[2px_0_4px_-2px_rgba(0,0,0,0.1)]">Channel Name</th>
                 {RATE_PLAN_IDS.map((id) => (
                   <th key={id} className="text-center font-medium pb-2 pt-1 w-[18%]">{id}</th>
                 ))}
@@ -179,8 +191,8 @@ export const ChannelPerformance: React.FC = () => {
             </thead>
             <tbody className="text-[11px]">
               {mostCancelPlanData.map((row, idx) => (
-                <tr key={idx} className="border-b border-gray-100 hover:bg-gray-50/50">
-                  <td className="py-2 pl-1 text-gray-700 font-medium align-middle">{row.channel}</td>
+                <tr key={idx} className="border-b border-gray-100 hover:bg-gray-50/50 group">
+                  <td className="py-2 pl-1 text-gray-700 font-medium align-middle sticky left-0 z-[1] bg-white group-hover:bg-gray-50/50">{row.channel}</td>
                   {RATE_PLAN_IDS.map((planId) => {
                     const value = row[planId as keyof typeof row] as number;
                     const bg = getHeatmapColor(value);

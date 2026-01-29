@@ -6,15 +6,42 @@ import { ChannelPerformance } from './components/ChannelPerformance';
 import { DataManager } from './components/DataManager';
 import { PropertyFilter } from './types';
 import { DataProvider } from './context/DataContext';
+import { ToastProvider } from './context/ToastContext';
+import { ToastContainer } from './components/Toast';
+
+type TabId = 'scorecard' | 'performance' | 'data';
+const TAB_IDS: TabId[] = ['scorecard', 'performance', 'data'];
+
+function getTabFromSearch(): TabId | null {
+  if (typeof window === 'undefined') return null;
+  const params = new URLSearchParams(window.location.search);
+  const t = params.get('tab');
+  return TAB_IDS.includes(t as TabId) ? (t as TabId) : null;
+}
+
+function setTabInUrl(tab: TabId) {
+  const url = new URL(window.location.href);
+  url.searchParams.set('tab', tab);
+  window.history.replaceState({}, '', url.pathname + url.search);
+}
 
 function DashboardLayout() {
-  const [activeTab, setActiveTab] = useState<'scorecard' | 'performance' | 'data'>('scorecard');
+  const [activeTab, setActiveTab] = useState<'scorecard' | 'performance' | 'data'>(() => getTabFromSearch() ?? 'scorecard');
   const [propertyFilter, setPropertyFilter] = useState<PropertyFilter>(PropertyFilter.ALL);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
-  // Close mobile menu when switching tabs
+  useEffect(() => {
+    const onPopState = () => {
+      const t = getTabFromSearch();
+      if (t) setActiveTab(t);
+    };
+    window.addEventListener('popstate', onPopState);
+    return () => window.removeEventListener('popstate', onPopState);
+  }, []);
+
   const handleTabChange = (tab: 'scorecard' | 'performance' | 'data') => {
     setActiveTab(tab);
+    setTabInUrl(tab);
     setIsMobileMenuOpen(false);
   };
 
@@ -55,45 +82,49 @@ function DashboardLayout() {
           <button 
             onClick={() => setIsMobileMenuOpen(false)}
             className="md:hidden text-gray-400 hover:text-white"
+            aria-label="Close menu"
           >
-            <X size={20} />
+            <X size={20} aria-hidden />
           </button>
         </div>
 
-        <nav className="flex-1 p-2 space-y-1 mt-2 overflow-y-auto">
+        <nav className="flex-1 p-2 space-y-1 mt-2 overflow-y-auto" aria-label="Main navigation">
           <button 
             onClick={() => handleTabChange('scorecard')}
+            aria-current={activeTab === 'scorecard' ? 'page' : undefined}
             className={`flex items-center gap-3 w-full px-3 py-3 md:py-2 rounded text-sm md:text-xs font-medium transition-colors ${
               activeTab === 'scorecard' 
               ? 'bg-blue-700 text-white' 
               : 'hover:bg-slate-800 hover:text-white'
             }`}
           >
-            <LayoutDashboard size={18} className="md:w-4 md:h-4" />
+            <LayoutDashboard size={18} className="md:w-4 md:h-4" aria-hidden />
             <span>Executive Scorecard</span>
           </button>
           
           <button 
              onClick={() => handleTabChange('performance')}
+             aria-current={activeTab === 'performance' ? 'page' : undefined}
              className={`flex items-center gap-3 w-full px-3 py-3 md:py-2 rounded text-sm md:text-xs font-medium transition-colors ${
               activeTab === 'performance' 
               ? 'bg-blue-700 text-white' 
               : 'hover:bg-slate-800 hover:text-white'
             }`}
           >
-            <BarChart3 size={18} className="md:w-4 md:h-4" />
+            <BarChart3 size={18} className="md:w-4 md:h-4" aria-hidden />
             <span>Channel Performance</span>
           </button>
 
           <button 
              onClick={() => handleTabChange('data')}
+             aria-current={activeTab === 'data' ? 'page' : undefined}
              className={`flex items-center gap-3 w-full px-3 py-3 md:py-2 rounded text-sm md:text-xs font-medium transition-colors ${
               activeTab === 'data' 
               ? 'bg-blue-700 text-white' 
               : 'hover:bg-slate-800 hover:text-white'
             }`}
           >
-            <Database size={18} className="md:w-4 md:h-4" />
+            <Database size={18} className="md:w-4 md:h-4" aria-hidden />
             <span>Data Management</span>
           </button>
         </nav>
@@ -113,8 +144,9 @@ function DashboardLayout() {
              <button 
                onClick={() => setIsMobileMenuOpen(true)}
                className="md:hidden p-1 -ml-1 text-gray-600 hover:bg-gray-100 rounded"
+               aria-label="Open menu"
              >
-               <Menu size={20} />
+               <Menu size={20} aria-hidden />
              </button>
 
              <div className="flex items-center gap-2 text-sm text-gray-600">
@@ -131,6 +163,7 @@ function DashboardLayout() {
                 value={propertyFilter}
                 onChange={(e) => setPropertyFilter(e.target.value as PropertyFilter)}
                 className="bg-transparent text-xs font-semibold text-gray-700 outline-none cursor-pointer w-full md:min-w-[140px]"
+                aria-label="Select property"
               >
                 <option value={PropertyFilter.ALL}>All Properties</option>
                 <option value={PropertyFilter.P001}>Seaside Da Nang</option>
@@ -140,26 +173,26 @@ function DashboardLayout() {
             </div>
             
             {activeTab !== 'data' && (
-              <button className="p-1.5 bg-white border border-gray-300 rounded hover:bg-gray-50 text-gray-500 shadow-sm hidden sm:block">
-                <Filter size={14} />
+              <button className="p-1.5 bg-white border border-gray-300 rounded hover:bg-gray-50 text-gray-500 shadow-sm hidden sm:block" aria-label="Filter">
+                <Filter size={14} aria-hidden />
               </button>
             )}
           </div>
         </header>
 
-        {/* Scrollable Content Area */}
+        {/* Scrollable Content Area - fade transition on tab change */}
         <div className="flex-1 overflow-x-hidden overflow-y-auto p-4 md:p-6">
-          {activeTab === 'scorecard' && (
-            <ExecutiveScorecard filter={propertyFilter} />
-          )}
-          
-          {activeTab === 'performance' && (
-            <ChannelPerformance />
-          )}
-
-          {activeTab === 'data' && (
-            <DataManager />
-          )}
+          <div key={activeTab} className="tab-fade-in">
+            {activeTab === 'scorecard' && (
+              <ExecutiveScorecard filter={propertyFilter} />
+            )}
+            {activeTab === 'performance' && (
+              <ChannelPerformance onNavigateToData={() => handleTabChange('data')} />
+            )}
+            {activeTab === 'data' && (
+              <DataManager />
+            )}
+          </div>
         </div>
 
       </main>
@@ -170,7 +203,10 @@ function DashboardLayout() {
 function App() {
   return (
     <DataProvider>
-      <DashboardLayout />
+      <ToastProvider>
+        <DashboardLayout />
+        <ToastContainer />
+      </ToastProvider>
     </DataProvider>
   );
 }

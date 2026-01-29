@@ -1,4 +1,5 @@
 import { PerformanceMetric } from '../types';
+import { PropertyFilter } from '../types';
 
 // Existing CSV parsing logic remains for raw data...
 const ratePlanCSV = `Name,Room revenue (VND),Reservations,Room nights,Avg. length of stay,ADR,Avg. lead time,Cancelled reservations
@@ -86,9 +87,30 @@ export const scatterData = [
 
 export const globalStats = {
   totalRevenue: 2245981,
-  avgADR: 153.20, // Simplified for screenshot matching
+  avgADR: 153.20,
   avgCancelRate: 0.1528,
-  directShare: 0.3281
+  directShare: 0.3281,
+  revPar: 57.29,
+};
+
+export type GlobalStatsShape = typeof globalStats;
+
+export const globalStatsByProperty: Record<string, GlobalStatsShape> = {
+  [PropertyFilter.ALL]: globalStats,
+  [PropertyFilter.P001]: {
+    totalRevenue: 1200000,
+    avgADR: 158,
+    avgCancelRate: 0.14,
+    directShare: 0.35,
+    revPar: 58.2,
+  },
+  [PropertyFilter.P002]: {
+    totalRevenue: 1045981,
+    avgADR: 148,
+    avgCancelRate: 0.16,
+    directShare: 0.31,
+    revPar: 56.1,
+  },
 };
 
 // Most Cancel Plan: heatmap data (Channel × Rate Plan → cancellation %)

@@ -4,7 +4,7 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, 
   LineChart, Line
 } from 'recharts';
-import { globalStats, channelMixData, complexTrendData } from '../services/mockData';
+import { globalStatsByProperty, channelMixData, complexTrendData } from '../services/mockData';
 import { PropertyFilter } from '../types';
 
 // Custom Colors to match screenshot
@@ -17,7 +17,11 @@ const COLORS = {
 
 const formatNumber = (num: number) => new Intl.NumberFormat('en-US').format(num);
 
-export const ExecutiveScorecard: React.FC<{ filter: PropertyFilter }> = () => {
+export const ExecutiveScorecard: React.FC<{ filter: PropertyFilter }> = ({ filter }) => {
+  const stats = globalStatsByProperty[filter] ?? globalStatsByProperty[PropertyFilter.ALL];
+  const showP001 = filter === PropertyFilter.ALL || filter === PropertyFilter.P001;
+  const showP002 = filter === PropertyFilter.ALL || filter === PropertyFilter.P002;
+
   return (
     <div className="space-y-4">
       
@@ -35,25 +39,25 @@ export const ExecutiveScorecard: React.FC<{ filter: PropertyFilter }> = () => {
           <div className="p-2 md:p-0 bg-gray-50 md:bg-transparent rounded md:rounded-none">
             <div className="text-[10px] md:text-[11px] text-orange-500 font-bold mb-0.5">KPI1</div>
             <div className="text-[10px] md:text-[11px] font-bold text-orange-400 uppercase mb-1">NET REVENUE</div>
-            <div className="text-base md:text-lg font-bold text-orange-500">{formatNumber(globalStats.totalRevenue)}</div>
+            <div className="text-base md:text-lg font-bold text-orange-500">{formatNumber(stats.totalRevenue)}</div>
           </div>
           {/* KPI 2 */}
           <div className="p-2 md:p-0 bg-gray-50 md:bg-transparent rounded md:rounded-none">
             <div className="text-[10px] md:text-[11px] text-yellow-600 font-bold mb-0.5">KPI 2</div>
             <div className="text-[10px] md:text-[11px] font-bold text-green-600 uppercase mb-1">RevPAR</div>
-            <div className="text-base md:text-lg font-bold text-green-600">57.29</div>
+            <div className="text-base md:text-lg font-bold text-green-600">{stats.revPar?.toFixed(2) ?? '57.29'}</div>
           </div>
           {/* KPI 3 */}
           <div className="p-2 md:p-0 bg-gray-50 md:bg-transparent rounded md:rounded-none">
              <div className="text-[10px] md:text-[11px] text-teal-600 font-bold mb-0.5">KPI 3</div>
              <div className="text-[10px] md:text-[11px] font-bold text-blue-500 uppercase mb-1">Cancel Rate</div>
-             <div className="text-base md:text-lg font-bold text-blue-600">{(globalStats.avgCancelRate * 100).toFixed(2)}%</div>
+             <div className="text-base md:text-lg font-bold text-blue-600">{(stats.avgCancelRate * 100).toFixed(2)}%</div>
           </div>
           {/* KPI 4 */}
           <div className="p-2 md:p-0 bg-gray-50 md:bg-transparent rounded md:rounded-none">
              <div className="text-[10px] md:text-[11px] text-teal-600 font-bold mb-0.5">KPI 4</div>
              <div className="text-[10px] md:text-[11px] font-bold text-teal-400 uppercase mb-1">Direct Share</div>
-             <div className="text-base md:text-lg font-bold text-teal-500">{(globalStats.directShare * 100).toFixed(2)}%</div>
+             <div className="text-base md:text-lg font-bold text-teal-500">{(stats.directShare * 100).toFixed(2)}%</div>
           </div>
         </div>
       </div>
@@ -112,8 +116,8 @@ export const ExecutiveScorecard: React.FC<{ filter: PropertyFilter }> = () => {
               <YAxis fontSize={10} axisLine={false} tickLine={false} label={{ value: 'Net Rev..', angle: -90, position: 'insideLeft', fontSize: 10, fill: '#6b7280' }} tickFormatter={(val) => `${val/1000}K`} />
               <XAxis dataKey="date" hide />
               <Tooltip contentStyle={{fontSize: '11px', padding: '4px 8px'}} />
-              <Line type="monotone" dataKey="revenueP001" stroke={COLORS.blue} strokeWidth={1.5} dot={false} />
-              <Line type="monotone" dataKey="revenueP002" stroke={COLORS.orange} strokeWidth={1.5} dot={false} />
+              {showP001 && <Line type="monotone" dataKey="revenueP001" stroke={COLORS.blue} strokeWidth={1.5} dot={false} name="P001" />}
+              {showP002 && <Line type="monotone" dataKey="revenueP002" stroke={COLORS.orange} strokeWidth={1.5} dot={false} name="P002" />}
             </LineChart>
           </ResponsiveContainer>
         </div>
@@ -126,8 +130,8 @@ export const ExecutiveScorecard: React.FC<{ filter: PropertyFilter }> = () => {
               <YAxis fontSize={10} axisLine={false} tickLine={false} label={{ value: 'RevPAR', angle: -90, position: 'insideLeft', fontSize: 10, fill: '#6b7280' }} domain={[0, 4]} />
               <XAxis dataKey="date" hide />
               <Tooltip contentStyle={{fontSize: '11px', padding: '4px 8px'}} />
-              <Line type="monotone" dataKey="revParP001" stroke={COLORS.blue} strokeWidth={1.5} dot={false} />
-              <Line type="monotone" dataKey="revParP002" stroke={COLORS.orange} strokeWidth={1.5} dot={false} />
+              {showP001 && <Line type="monotone" dataKey="revParP001" stroke={COLORS.blue} strokeWidth={1.5} dot={false} name="P001" />}
+              {showP002 && <Line type="monotone" dataKey="revParP002" stroke={COLORS.orange} strokeWidth={1.5} dot={false} name="P002" />}
             </LineChart>
           </ResponsiveContainer>
         </div>
@@ -140,11 +144,11 @@ export const ExecutiveScorecard: React.FC<{ filter: PropertyFilter }> = () => {
               <YAxis fontSize={10} axisLine={false} tickLine={false} label={{ value: 'ADR', angle: -90, position: 'insideLeft', fontSize: 10, fill: '#6b7280' }} domain={[0, 160]} />
               <XAxis dataKey="date" fontSize={10} tickLine={false} tick={{fill: '#6b7280'}} />
               <Tooltip contentStyle={{fontSize: '11px', padding: '4px 8px'}} />
-              <Line type="monotone" dataKey="adrP001" stroke={COLORS.blue} strokeWidth={1.5} dot={false} />
-              <Line type="monotone" dataKey="adrP002" stroke={COLORS.orange} strokeWidth={1.5} dot={false} />
+              {showP001 && <Line type="monotone" dataKey="adrP001" stroke={COLORS.blue} strokeWidth={1.5} dot={false} name="P001" />}
+              {showP002 && <Line type="monotone" dataKey="adrP002" stroke={COLORS.orange} strokeWidth={1.5} dot={false} name="P002" />}
               <Legend payload={[
-                { value: 'P001', type: 'line', color: COLORS.blue },
-                { value: 'P002', type: 'line', color: COLORS.orange }
+                ...(showP001 ? [{ value: 'P001', type: 'line' as const, color: COLORS.blue }] : []),
+                ...(showP002 ? [{ value: 'P002', type: 'line' as const, color: COLORS.orange }] : []),
               ]} wrapperStyle={{ fontSize: '10px', right: 0, bottom: 0 }} />
             </LineChart>
           </ResponsiveContainer>

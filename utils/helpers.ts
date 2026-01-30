@@ -4,6 +4,9 @@ import { TopProblem } from '../types';
 export const formatCurrency = (val: number) => new Intl.NumberFormat('en-US').format(val);
 
 const EXPECTED_HEADERS = ['channel', 'rate plan', 'commission', 'revenue', 'cancel rate'];
+const PROPERTY_NORMALIZE: Record<string, string> = {
+  'p001': 'P001', 'p002': 'P002', 'all': 'All Properties', 'all properties': 'All Properties',
+};
 function normalizeHeader(h: string): string {
   return h.trim().toLowerCase().replace(/\s+/g, ' ');
 }
@@ -36,6 +39,8 @@ export const parseCSVString = (text: string): TopProblem[] => {
     throw new Error(`Invalid CSV header: expected "Channel, Rate Plan, Commission, Revenue, Cancel Rate" (order matters). Got: ${headerLine.slice(0, 80)}…`);
   }
   const hasLeadTime = headerParts.length >= 6 && (headerParts[5]?.includes('lead') ?? false);
+  const propertyIdx = headerParts.findIndex((h) => h.includes('property'));
+  const dateIdx = headerParts.findIndex((h) => h === 'date' || h.includes('date'));
 
   return lines.slice(1).map((line, index) => {
     if (!line.trim()) return null;
@@ -52,16 +57,31 @@ export const parseCSVString = (text: string): TopProblem[] => {
       const lt = parseFloat(parts[5].trim());
       row.leadTime = Number.isNaN(lt) ? 0 : Math.max(0, lt);
     }
+    if (propertyIdx >= 0 && parts[propertyIdx] !== undefined) {
+      const raw = parts[propertyIdx].trim().toLowerCase();
+      row.property = PROPERTY_NORMALIZE[raw] ?? (raw ? raw : undefined);
+    }
+    if (dateIdx >= 0 && parts[dateIdx] !== undefined) {
+      const d = parts[dateIdx].trim();
+      if (d && /^\d{4}-\d{2}-\d{2}$/.test(d)) row.date = d;
+    }
     return row;
   }).filter((item): item is TopProblem => item !== null);
 };
 
 export function exportToCSV(rows: TopProblem[]): string {
   const hasLeadTime = rows.some((r) => r.leadTime != null);
-  const header = hasLeadTime ? 'Channel,Rate Plan,Commission,Revenue,Cancel Rate,Lead Time' : 'Channel,Rate Plan,Commission,Revenue,Cancel Rate';
+  const hasProperty = rows.some((r) => r.property != null);
+  const hasDate = rows.some((r) => r.date != null);
+  let header = 'Channel,Rate Plan,Commission,Revenue,Cancel Rate';
+  if (hasLeadTime) header += ',Lead Time';
+  if (hasProperty) header += ',Property';
+  if (hasDate) header += ',Date';
   const body = rows.map((r) => {
     const base = [r.channel, r.ratePlan, r.commission, r.revenue, (r.cancelRate * 100).toFixed(2)];
     if (hasLeadTime) base.push(String(r.leadTime ?? ''));
+    if (hasProperty) base.push(String(r.property ?? ''));
+    if (hasDate) base.push(String(r.date ?? ''));
     return base.join(',');
   }).join('\n');
   return header + '\n' + body;

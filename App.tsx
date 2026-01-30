@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { LayoutDashboard, BarChart3, Filter, Building2, ChevronDown, Database, Activity, Menu, X, PanelLeftClose } from 'lucide-react';
+import { LayoutDashboard, BarChart3, Building2, ChevronDown, Database, Activity, Menu, X, PanelLeftClose } from 'lucide-react';
 import { ExecutiveScorecard } from './components/ExecutiveScorecard';
 import { ChannelPerformance } from './components/ChannelPerformance';
 import { DataManager } from './components/DataManager';
@@ -8,6 +8,7 @@ import { PropertyFilter } from './types';
 import { DataProvider } from './context/DataContext';
 import { ToastProvider } from './context/ToastContext';
 import { ToastContainer } from './components/Toast';
+import { getTrendDateRange } from './services/mockData';
 
 type TabId = 'scorecard' | 'performance' | 'data';
 const TAB_IDS: TabId[] = ['scorecard', 'performance', 'data'];
@@ -25,9 +26,13 @@ function setTabInUrl(tab: TabId) {
   window.history.replaceState({}, '', url.pathname + url.search);
 }
 
+const trendRange = getTrendDateRange();
+
 function DashboardLayout() {
   const [activeTab, setActiveTab] = useState<'scorecard' | 'performance' | 'data'>(() => getTabFromSearch() ?? 'scorecard');
   const [propertyFilter, setPropertyFilter] = useState<PropertyFilter>(PropertyFilter.ALL);
+  const [dateFrom, setDateFrom] = useState(trendRange.min);
+  const [dateTo, setDateTo] = useState(trendRange.max);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const isMobileMenuOpen = sidebarOpen; // alias for mobile overlay
 
@@ -107,7 +112,7 @@ function DashboardLayout() {
             }`}
           >
             <LayoutDashboard size={18} className="md:w-4 md:h-4" aria-hidden />
-            <span>Executive Scorecard</span>
+            <span>Dashboard 1</span>
           </button>
           
           <button 
@@ -120,7 +125,7 @@ function DashboardLayout() {
             }`}
           >
             <BarChart3 size={18} className="md:w-4 md:h-4" aria-hidden />
-            <span>Channel Performance</span>
+            <span>Dashboard 2</span>
           </button>
 
           <button 
@@ -146,58 +151,131 @@ function DashboardLayout() {
       <main className={`flex-1 flex flex-col min-w-0 h-screen ${sidebarOpen ? 'md:ml-56' : 'md:ml-0'}`}>
         
         {/* Top Header */}
-        <header className="h-14 bg-white border-b border-gray-300 sticky top-0 z-20 flex items-center justify-between px-4 md:px-6 shadow-sm flex-shrink-0">
-          <div className="flex items-center gap-3">
-             {/* Open sidebar (when closed) */}
+        <header className="min-h-14 bg-white border-b border-gray-300 sticky top-0 z-20 flex items-center justify-between py-3 px-3 sm:px-4 md:px-6 shadow-sm flex-shrink-0">
+          <div className="flex items-center gap-2 sm:gap-3 min-w-0">
              {!sidebarOpen && (
                <button 
                  onClick={() => setSidebarOpen(true)}
-                 className="p-1 -ml-1 text-gray-600 hover:bg-gray-100 rounded"
+                 className="p-2 -ml-1 text-gray-600 hover:bg-gray-100 rounded touch-manipulation"
                  aria-label="Open sidebar"
                >
                  <Menu size={20} aria-hidden />
                </button>
              )}
 
-             <div className="flex items-center gap-2 text-sm text-gray-600">
+             <div className="flex items-center gap-2 text-xs sm:text-sm text-gray-600 min-w-0">
                <span className="font-semibold text-gray-900 hidden sm:inline">Dashboard</span>
                <span className="text-gray-400 hidden sm:inline">/</span>
-               <span className="font-medium truncate max-w-[150px] sm:max-w-none">{getPageTitle()}</span>
+               <span className="font-medium truncate max-w-[140px] sm:max-w-[200px] md:max-w-none">{getPageTitle()}</span>
              </div>
-          </div>
-
-          <div className="flex items-center gap-2 md:gap-3">
-            <div className="flex items-center gap-2 bg-white px-2 py-1.5 rounded border border-gray-300 shadow-sm hover:border-blue-400 transition-colors max-w-[160px] md:max-w-none">
-              <Building2 size={14} className="text-gray-500 flex-shrink-0" />
-              <select 
-                value={propertyFilter}
-                onChange={(e) => setPropertyFilter(e.target.value as PropertyFilter)}
-                className="bg-transparent text-xs font-semibold text-gray-700 outline-none cursor-pointer w-full md:min-w-[140px]"
-                aria-label="Select property"
-              >
-                <option value={PropertyFilter.ALL}>All Properties</option>
-                <option value={PropertyFilter.P001}>Furama Resort Danang</option>
-                <option value={PropertyFilter.P002}>Furama Villas Danang</option>
-              </select>
-              <ChevronDown size={12} className="text-gray-400 flex-shrink-0 hidden sm:block" />
-            </div>
-            
-            {activeTab !== 'data' && (
-              <button className="p-1.5 bg-white border border-gray-300 rounded hover:bg-gray-50 text-gray-500 shadow-sm hidden sm:block" aria-label="Filter">
-                <Filter size={14} aria-hidden />
-              </button>
-            )}
           </div>
         </header>
 
         {/* Scrollable Content Area - fade transition on tab change */}
-        <div className="flex-1 overflow-x-hidden overflow-y-auto p-4 md:p-6">
-          <div key={activeTab} className="tab-fade-in">
+        <div className="flex-1 overflow-x-hidden overflow-y-auto p-3 sm:p-4 md:p-6 overscroll-behavior-contain">
+          <div key={activeTab} className="tab-fade-in space-y-4">
             {activeTab === 'scorecard' && (
-              <ExecutiveScorecard filter={propertyFilter} />
+              <>
+                {/* Filter bar - inside main content, only for Dashboard 1 */}
+                <div className="flex flex-wrap items-center gap-2 sm:gap-3 p-3 sm:p-4 bg-white rounded-sm border border-gray-200 shadow-sm">
+                  <div className="flex items-center gap-1.5 sm:gap-2 px-2 py-2 sm:py-1.5 rounded border border-gray-300 bg-gray-50/50 min-h-[40px] min-w-[140px] sm:min-w-[160px]">
+                    <Building2 size={14} className="text-gray-500 flex-shrink-0" />
+                    <select 
+                      value={propertyFilter}
+                      onChange={(e) => setPropertyFilter(e.target.value as PropertyFilter)}
+                      className="bg-transparent text-xs font-semibold text-gray-700 outline-none cursor-pointer w-full min-h-[32px] touch-manipulation"
+                      aria-label="Select property"
+                    >
+                      <option value={PropertyFilter.ALL}>All Properties</option>
+                      <option value={PropertyFilter.P001}>Furama Resort Danang</option>
+                      <option value={PropertyFilter.P002}>Furama Villas Danang</option>
+                    </select>
+                    <ChevronDown size={12} className="text-gray-400 flex-shrink-0 hidden sm:block" />
+                  </div>
+                  <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-1.5 sm:gap-2 px-2 py-2 sm:py-1.5 rounded border border-gray-300 bg-gray-50/50 min-h-[40px]">
+                    <div className="flex items-center gap-1.5 flex-1 sm:flex-initial">
+                      <span className="text-[10px] sm:text-xs text-gray-500 font-medium whitespace-nowrap w-6 sm:w-auto">Từ</span>
+                      <input
+                        type="date"
+                        value={dateFrom}
+                        min={trendRange.min}
+                        max={trendRange.max}
+                        onChange={(e) => setDateFrom(e.target.value)}
+                        className="bg-transparent text-xs font-semibold text-gray-700 outline-none flex-1 min-w-0 min-h-[32px] touch-manipulation border-0 p-0"
+                        aria-label="From date"
+                      />
+                    </div>
+                    <div className="flex items-center gap-1.5 flex-1 sm:flex-initial">
+                      <span className="text-[10px] sm:text-xs text-gray-500 font-medium whitespace-nowrap w-6 sm:w-auto">đến</span>
+                      <input
+                        type="date"
+                        value={dateTo}
+                        min={trendRange.min}
+                        max={trendRange.max}
+                        onChange={(e) => setDateTo(e.target.value)}
+                        className="bg-transparent text-xs font-semibold text-gray-700 outline-none flex-1 min-w-0 min-h-[32px] touch-manipulation border-0 p-0"
+                        aria-label="To date"
+                      />
+                    </div>
+                  </div>
+                </div>
+                <ExecutiveScorecard 
+                  filter={propertyFilter} 
+                  dateRange={dateFrom && dateTo ? { from: dateFrom, to: dateTo } : undefined} 
+                />
+              </>
             )}
             {activeTab === 'performance' && (
-              <ChannelPerformance onNavigateToData={() => handleTabChange('data')} />
+              <>
+                {/* Filter bar - inside main content, for Dashboard 2 */}
+                <div className="flex flex-wrap items-center gap-2 sm:gap-3 p-3 sm:p-4 bg-white rounded-sm border border-gray-200 shadow-sm">
+                  <div className="flex items-center gap-1.5 sm:gap-2 px-2 py-2 sm:py-1.5 rounded border border-gray-300 bg-gray-50/50 min-h-[40px] min-w-[140px] sm:min-w-[160px]">
+                    <Building2 size={14} className="text-gray-500 flex-shrink-0" />
+                    <select 
+                      value={propertyFilter}
+                      onChange={(e) => setPropertyFilter(e.target.value as PropertyFilter)}
+                      className="bg-transparent text-xs font-semibold text-gray-700 outline-none cursor-pointer w-full min-h-[32px] touch-manipulation"
+                      aria-label="Select property"
+                    >
+                      <option value={PropertyFilter.ALL}>All Properties</option>
+                      <option value={PropertyFilter.P001}>Furama Resort Danang</option>
+                      <option value={PropertyFilter.P002}>Furama Villas Danang</option>
+                    </select>
+                    <ChevronDown size={12} className="text-gray-400 flex-shrink-0 hidden sm:block" />
+                  </div>
+                  <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-1.5 sm:gap-2 px-2 py-2 sm:py-1.5 rounded border border-gray-300 bg-gray-50/50 min-h-[40px]">
+                    <div className="flex items-center gap-1.5 flex-1 sm:flex-initial">
+                      <span className="text-[10px] sm:text-xs text-gray-500 font-medium whitespace-nowrap w-6 sm:w-auto">Từ</span>
+                      <input
+                        type="date"
+                        value={dateFrom}
+                        min={trendRange.min}
+                        max={trendRange.max}
+                        onChange={(e) => setDateFrom(e.target.value)}
+                        className="bg-transparent text-xs font-semibold text-gray-700 outline-none flex-1 min-w-0 min-h-[32px] touch-manipulation border-0 p-0"
+                        aria-label="From date"
+                      />
+                    </div>
+                    <div className="flex items-center gap-1.5 flex-1 sm:flex-initial">
+                      <span className="text-[10px] sm:text-xs text-gray-500 font-medium whitespace-nowrap w-6 sm:w-auto">đến</span>
+                      <input
+                        type="date"
+                        value={dateTo}
+                        min={trendRange.min}
+                        max={trendRange.max}
+                        onChange={(e) => setDateTo(e.target.value)}
+                        className="bg-transparent text-xs font-semibold text-gray-700 outline-none flex-1 min-w-0 min-h-[32px] touch-manipulation border-0 p-0"
+                        aria-label="To date"
+                      />
+                    </div>
+                  </div>
+                </div>
+                <ChannelPerformance 
+                  onNavigateToData={() => handleTabChange('data')} 
+                  filter={propertyFilter} 
+                  dateRange={dateFrom && dateTo ? { from: dateFrom, to: dateTo } : undefined} 
+                />
+              </>
             )}
             {activeTab === 'data' && (
               <DataManager />

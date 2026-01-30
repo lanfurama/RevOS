@@ -29,6 +29,10 @@
       .tab-fade-in {
         animation: fadeIn 0.2s ease-out forwards;
       }
+      /* Better tap targets on mobile */
+      @media (pointer: coarse) {
+        input, select, button { min-height: 44px; }
+      }
     </style>
   <script type="importmap">
 {
@@ -43,7 +47,7 @@
 </script>
 <link rel="stylesheet" href="/index.css">
 </head>
-  <body class="bg-gray-50 text-slate-800 antialiased">
+  <body class="bg-gray-50 text-slate-800 antialiased min-h-screen touch-manipulation">
     <div id="root"></div>
   <script type="module" src="/index.tsx"></script>
 </body>

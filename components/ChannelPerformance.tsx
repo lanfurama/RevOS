@@ -4,10 +4,16 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   ScatterChart, Scatter, ZAxis, Cell
 } from 'recharts';
-import { channelMixData, scatterData, mostCancelPlanData, RATE_PLAN_IDS } from '../services/mockData';
+import { channelMixData, channelMixByProperty, scatterData, mostCancelPlanData, mostCancelPlanByProperty, RATE_PLAN_IDS } from '../services/mockData';
 import { useData } from '../context/DataContext';
 import { formatCurrency } from '../utils/helpers';
 import { EmptyState } from './EmptyState';
+import { PropertyFilter } from '../types';
+
+export interface DateRangeFilter {
+  from: string;
+  to: string;
+}
 
 // Heatmap: map cancel % (min~max) to background color (light tan → dark red)
 const CANCEL_MIN = 6;
@@ -73,13 +79,13 @@ function ScatterPlotMatrix({ data }: { data: MatrixRow[] }) {
   const margin = { top: 6, right: 6, bottom: 24, left: 40 };
 
   return (
-    <div className="grid grid-cols-3 w-full" style={{ height: 528 }}>
+    <div className="grid grid-cols-3 grid-rows-3 w-full h-full min-h-[280px]" style={{ gridTemplateRows: 'repeat(3, 1fr)' }}>
       {MATRIX_VARS.map((yVar, i) =>
         MATRIX_VARS.map((xVar, j) => {
           const xKey = xVar.key as keyof MatrixRow;
           const yKey = yVar.key as keyof MatrixRow;
           return (
-            <div key={`${i}-${j}`} className="w-full" style={{ height: 176 }}>
+            <div key={`${i}-${j}`} className="w-full min-h-0 overflow-hidden">
               <ResponsiveContainer width="100%" height="100%">
                 <ScatterChart margin={margin}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
@@ -142,14 +148,42 @@ function ScatterPlotMatrix({ data }: { data: MatrixRow[] }) {
 
 interface ChannelPerformanceProps {
   onNavigateToData?: () => void;
+  filter?: PropertyFilter;
+  dateRange?: DateRangeFilter;
 }
 
-export const ChannelPerformance: React.FC<ChannelPerformanceProps> = ({ onNavigateToData }) => {
+function filterTopProblems(
+  rows: import('../types').TopProblem[],
+  propertyFilter: PropertyFilter | undefined,
+  dateRange: DateRangeFilter | undefined
+): import('../types').TopProblem[] {
+  let out = rows;
+  if (propertyFilter && propertyFilter !== PropertyFilter.ALL) {
+    const code = propertyFilter === PropertyFilter.P001 ? 'P001' : 'P002';
+    out = out.filter(
+      (r) =>
+        !r.property ||
+        r.property === code ||
+        r.property === 'All Properties'
+    );
+  }
+  if (dateRange?.from && dateRange?.to) {
+    out = out.filter(
+      (r) => !r.date || (r.date >= dateRange.from && r.date <= dateRange.to)
+    );
+  }
+  return out;
+}
+
+export const ChannelPerformance: React.FC<ChannelPerformanceProps> = ({ onNavigateToData, filter, dateRange }) => {
   const { topProblems } = useData();
 
-  // Dynamic max calculation for bars to look relative to current data
-  const maxRevenue = Math.max(...topProblems.map(d => d.revenue), 350000);
-  const maxCommission = Math.max(...topProblems.map(d => d.commission), 50000);
+  const filteredTopProblems = filterTopProblems(topProblems, filter, dateRange);
+  const channelMix = filter && channelMixByProperty[filter] ? channelMixByProperty[filter] : channelMixData;
+  const mostCancelPlan = filter && mostCancelPlanByProperty[filter] ? mostCancelPlanByProperty[filter] : mostCancelPlanData;
+
+  const maxRevenue = Math.max(...filteredTopProblems.map(d => d.revenue), 350000);
+  const maxCommission = Math.max(...filteredTopProblems.map(d => d.commission), 50000);
 
   return (
     <div className="space-y-4">
@@ -159,18 +193,18 @@ export const ChannelPerformance: React.FC<ChannelPerformanceProps> = ({ onNaviga
         <div className="space-y-4 min-w-0">
           
           {/* Revenue vs Commission Chart */}
-          <div className="bg-white p-4 border border-gray-300 rounded shadow-sm">
-            <h3 className="text-sm font-semibold text-gray-700 mb-2">Revenue vs Commission</h3>
-            <div className="h-[240px] w-full">
+          <div className="bg-white p-3 sm:p-4 border border-gray-300 rounded shadow-sm overflow-hidden">
+            <h3 className="text-xs sm:text-sm font-semibold text-gray-700 mb-2">Revenue vs Commission</h3>
+            <div className="h-[200px] sm:h-[240px] w-full min-w-0">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart layout="vertical" data={channelMixData} margin={{ top: 0, right: 30, left: 10, bottom: 0 }} barGap={2}>
+                <BarChart layout="vertical" data={channelMix} margin={{ top: 0, right: 20, left: 8, bottom: 0 }} barGap={2}>
                   <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f3f4f6" />
                   <XAxis type="number" hide />
                   <YAxis 
                     dataKey="name" 
                     type="category" 
-                    width={130} 
-                    tick={{fontSize: 11, fill: '#374151', fontWeight: 500}} 
+                    width={95} 
+                    tick={{fontSize: 10, fill: '#374151', fontWeight: 500}} 
                     axisLine={false}
                     tickLine={false}
                   />
@@ -191,31 +225,33 @@ export const ChannelPerformance: React.FC<ChannelPerformanceProps> = ({ onNaviga
           </div>
 
           {/* LeadTime vs Cancel – Scatter Plot Matrix (3×3) from real data */}
-          <div className="bg-white p-4 border border-gray-300 rounded shadow-sm">
-            <h3 className="text-sm font-semibold text-gray-700 mb-2">LeadTime vs Cancel</h3>
-            <div className="h-[540px] w-full">
-              {topProblems.length === 0 ? (
+          <div className="bg-white p-3 sm:p-4 border border-gray-300 rounded shadow-sm overflow-hidden">
+            <h3 className="text-xs sm:text-sm font-semibold text-gray-700 mb-2">LeadTime vs Cancel</h3>
+            <div className="overflow-x-auto overflow-y-hidden -mx-1 px-1">
+              <div className="min-w-[300px] w-full max-w-full h-[340px] sm:h-[420px] md:h-[540px]">
+              {filteredTopProblems.length === 0 ? (
                 <EmptyState
                   title="No data"
-                  description="Import CSV in Data Management to see LeadTime vs Cancel here."
+                  description="Import CSV in Data Management to see LeadTime vs Cancel here, or adjust filters."
                   actionLabel="Go to Data Management"
                   onAction={onNavigateToData}
                 />
               ) : (
-                <ScatterPlotMatrix data={buildMatrixFromTopProblems(topProblems)} />
+                <ScatterPlotMatrix data={buildMatrixFromTopProblems(filteredTopProblems)} />
               )}
+              </div>
             </div>
           </div>
         </div>
 
         {/* RIGHT COLUMN: TOP PROBLEMS TABLE */}
-        <div className="bg-white p-4 border border-gray-300 rounded shadow-sm flex flex-col h-full">
-          <h3 className="text-sm font-semibold text-gray-700 mb-3">Top Problems</h3>
+        <div className="bg-white p-3 sm:p-4 border border-gray-300 rounded shadow-sm flex flex-col min-h-0">
+          <h3 className="text-xs sm:text-sm font-semibold text-gray-700 mb-2 sm:mb-3">Top Problems</h3>
           
-          <div className="overflow-auto flex-1 -mx-1 px-1">
-            <table className="w-full border-collapse table-fixed min-w-[380px]">
+          <div className="overflow-auto flex-1 min-h-0 -mx-1 px-1 touch-pan-x">
+            <table className="w-full border-collapse table-fixed min-w-[320px] sm:min-w-[380px]">
               <thead>
-                <tr className="text-gray-500 border-b border-gray-200 text-[11px] align-bottom leading-tight">
+                <tr className="text-gray-500 border-b border-gray-200 text-[10px] sm:text-[11px] align-bottom leading-tight">
                   <th className="text-left font-medium pb-2 w-[22%] pl-1 sticky left-0 z-10 bg-white shadow-[2px_0_4px_-2px_rgba(0,0,0,0.1)]">Channel<br/>Name</th>
                   <th className="text-left font-medium pb-2 w-[18%]">Rate Plan</th>
                   <th className="text-right font-medium pb-2 w-[20%]">Commission<br/>A..</th>
@@ -223,20 +259,20 @@ export const ChannelPerformance: React.FC<ChannelPerformanceProps> = ({ onNaviga
                   <th className="text-right font-medium pb-2 w-[15%] pr-1">Cancel<br/>Rate</th>
                 </tr>
               </thead>
-              <tbody className="text-[11px]">
-                {topProblems.length === 0 ? (
+              <tbody className="text-[10px] sm:text-[11px]">
+                {filteredTopProblems.length === 0 ? (
                   <tr>
                     <td colSpan={5} className="p-0 align-top">
                       <EmptyState
                         title="No data"
-                        description="Import CSV in Data Management to see Top Problems here."
+                        description="Import CSV in Data Management to see Top Problems here, or adjust filters."
                         actionLabel="Go to Data Management"
                         onAction={onNavigateToData}
                       />
                     </td>
                   </tr>
                 ) : (
-                  topProblems.map((row, idx) => (
+                  filteredTopProblems.map((row, idx) => (
                     <tr key={idx} className="border-b border-gray-100 hover:bg-gray-50 group">
                       <td className="py-2 pl-1 text-gray-700 truncate font-medium sticky left-0 z-[1] bg-white group-hover:bg-gray-50" title={row.channel}>{row.channel}</td>
                       <td className="py-2 text-gray-500 truncate" title={row.ratePlan}>{row.ratePlan}</td>
@@ -270,20 +306,20 @@ export const ChannelPerformance: React.FC<ChannelPerformanceProps> = ({ onNaviga
       </div>
 
       {/* Most Cancel Plan – heatmap by Channel × Rate Plan */}
-      <div className="bg-white p-4 border border-gray-300 rounded shadow-sm">
-        <h3 className="text-sm font-semibold text-gray-700 mb-3">Most Cancel Plan</h3>
-        <div className="overflow-x-auto -mx-1 px-1">
-          <table className="w-full border-collapse min-w-[420px]">
+      <div className="bg-white p-3 sm:p-4 border border-gray-300 rounded shadow-sm overflow-hidden">
+        <h3 className="text-xs sm:text-sm font-semibold text-gray-700 mb-2 sm:mb-3">Most Cancel Plan</h3>
+        <div className="overflow-x-auto -mx-1 px-1 touch-pan-x">
+          <table className="w-full border-collapse min-w-[320px] sm:min-w-[420px]">
             <thead>
-              <tr className="text-gray-500 border-b border-gray-200 text-[11px]">
+              <tr className="text-gray-500 border-b border-gray-200 text-[10px] sm:text-[11px]">
                 <th className="text-left font-medium pb-2 pt-1 w-[28%] pl-1 sticky left-0 z-10 bg-white shadow-[2px_0_4px_-2px_rgba(0,0,0,0.1)]">Channel Name</th>
                 {RATE_PLAN_IDS.map((id) => (
                   <th key={id} className="text-center font-medium pb-2 pt-1 w-[18%]">{id}</th>
                 ))}
               </tr>
             </thead>
-            <tbody className="text-[11px]">
-              {mostCancelPlanData.map((row, idx) => (
+            <tbody className="text-[10px] sm:text-[11px]">
+              {mostCancelPlan.map((row, idx) => (
                 <tr key={idx} className="border-b border-gray-100 hover:bg-gray-50/50 group">
                   <td className="py-2 pl-1 text-gray-700 font-medium align-middle sticky left-0 z-[1] bg-white group-hover:bg-gray-50/50">{row.channel}</td>
                   {RATE_PLAN_IDS.map((planId) => {

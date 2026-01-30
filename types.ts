@@ -33,6 +33,10 @@ export interface TopProblem {
   cancelRate: number;
   /** Optional: avg lead time (e.g. days). Used for LeadTime vs Cancel scatter matrix. */
   leadTime?: number;
+  /** Optional: property code for filtering (P001, P002, or All Properties). */
+  property?: string;
+  /** Optional: date YYYY-MM-DD for date-range filtering. */
+  date?: string;
 }
 
 export type DatasetType = 'ratePlan' | 'country' | 'roomType';

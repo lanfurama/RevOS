@@ -154,11 +154,11 @@ export const DataManager: React.FC = () => {
   const isPreviewMode = previewData !== null;
 
   return (
-    <div className="space-y-6">
-      <div className="bg-white p-6 rounded-sm shadow-sm border border-gray-200">
-        <div className="flex justify-between items-center mb-4 border-b border-gray-100 pb-4">
-          <h2 className="text-lg font-bold text-gray-800 flex items-center gap-2">
-            <Upload size={20} className="text-blue-600" />
+    <div className="space-y-4 sm:space-y-6">
+      <div className="bg-white p-4 sm:p-6 rounded-sm shadow-sm border border-gray-200">
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 mb-4 border-b border-gray-100 pb-4">
+          <h2 className="text-base sm:text-lg font-bold text-gray-800 flex items-center gap-2">
+            <Upload size={20} className="text-blue-600 flex-shrink-0" />
             Import Top Problems Data
           </h2>
           <div className="text-xs text-gray-500">

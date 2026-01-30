@@ -20,6 +20,126 @@ function getHeatmapColor(pct: number): string {
   return `rgb(${r},${g},${b})`;
 }
 
+// Scatter Plot Matrix: 3×3 grid (Avg. Lead time, Cancellation Rate, Lead time)
+const MATRIX_VARS = [
+  { key: 'avgLeadTime', label: 'Avg. Lead time', domain: [0, 20] as [number, number], format: (v: number) => String(v) },
+  { key: 'cancelRatePct', label: 'Cancellation Rate', domain: [0, 20] as [number, number], format: (v: number) => `${v.toFixed(2)}%` },
+  { key: 'leadTimeK', label: 'Lead time', domain: [0, 40000] as [number, number], format: (v: number) => `${(v / 1000).toFixed(0)}K` },
+] as const;
+
+const CHANNEL_COLORS = ['#ea580c', '#2563eb', '#16a34a', '#dc2626', '#0ea5e9', '#c026d3', '#ca8a04', '#64748b'];
+
+export interface MatrixRow {
+  name: string;
+  avgLeadTime: number;
+  cancelRatePct: number;
+  leadTimeK: number;
+  color: string;
+}
+
+function buildMatrixFromTopProblems(topProblems: import('../types').TopProblem[]): MatrixRow[] {
+  if (topProblems.length === 0) return [];
+  const byChannel = new Map<string, { leadTimeSum: number; leadTimeCount: number; cancelSum: number; revenueSum: number; count: number }>();
+  for (const row of topProblems) {
+    const cur = byChannel.get(row.channel) ?? { leadTimeSum: 0, leadTimeCount: 0, cancelSum: 0, revenueSum: 0, count: 0 };
+    cur.cancelSum += row.cancelRate;
+    cur.revenueSum += row.revenue;
+    cur.count += 1;
+    if (row.leadTime != null) {
+      cur.leadTimeSum += row.leadTime;
+      cur.leadTimeCount += 1;
+    }
+    byChannel.set(row.channel, cur);
+  }
+  const channels = Array.from(byChannel.keys());
+  return channels.map((channel, idx) => {
+    const cur = byChannel.get(channel)!;
+    const avgLeadTime = cur.leadTimeCount > 0 ? cur.leadTimeSum / cur.leadTimeCount : 0;
+    const avgCancelRate = cur.cancelSum / cur.count;
+    const leadTimeK = cur.leadTimeCount > 0
+      ? Math.min(40000, avgLeadTime * 2000)
+      : Math.min(40000, cur.revenueSum / 15);
+    return {
+      name: channel,
+      avgLeadTime: Math.min(20, avgLeadTime),
+      cancelRatePct: Math.min(20, avgCancelRate * 100),
+      leadTimeK,
+      color: CHANNEL_COLORS[idx % CHANNEL_COLORS.length],
+    };
+  });
+}
+
+function ScatterPlotMatrix({ data }: { data: MatrixRow[] }) {
+  const margin = { top: 6, right: 6, bottom: 24, left: 40 };
+
+  return (
+    <div className="grid grid-cols-3 w-full" style={{ height: 528 }}>
+      {MATRIX_VARS.map((yVar, i) =>
+        MATRIX_VARS.map((xVar, j) => {
+          const xKey = xVar.key as keyof MatrixRow;
+          const yKey = yVar.key as keyof MatrixRow;
+          return (
+            <div key={`${i}-${j}`} className="w-full" style={{ height: 176 }}>
+              <ResponsiveContainer width="100%" height="100%">
+                <ScatterChart margin={margin}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                  <XAxis
+                    type="number"
+                    dataKey={xKey}
+                    domain={xVar.domain}
+                    tickCount={4}
+                    fontSize={9}
+                    tickLine={false}
+                    axisLine={{ stroke: '#d1d5db' }}
+                    tick={{ fill: '#374151' }}
+                    tickFormatter={xVar.format}
+                    label={i === 2 ? { value: xVar.label, position: 'bottom', fontSize: 9, fill: '#374151' } : undefined}
+                  />
+                  <YAxis
+                    type="number"
+                    dataKey={yKey}
+                    domain={yVar.domain}
+                    tickCount={4}
+                    fontSize={9}
+                    tickLine={false}
+                    axisLine={{ stroke: '#d1d5db' }}
+                    tick={{ fill: '#374151' }}
+                    tickFormatter={yVar.format}
+                    width={38}
+                    label={j === 0 ? { value: yVar.label, angle: -90, position: 'insideLeft', fontSize: 9, fill: '#374151' } : undefined}
+                  />
+                  <Tooltip
+                    cursor={{ strokeDasharray: '3 3', stroke: '#94a3b8' }}
+                    content={({ active, payload }) => {
+                      if (!active || !payload?.length) return null;
+                      const p = payload[0].payload as MatrixRow;
+                      return (
+                        <div className="bg-white border border-gray-200 rounded-lg shadow-md px-3 py-2 text-left">
+                          <div className="font-semibold text-gray-800 border-b border-gray-100 pb-1 mb-1">{p.name}</div>
+                          <div className="text-xs text-gray-600 space-y-0.5">
+                            <div>Avg. Lead time: <span className="font-medium text-gray-800">{p.avgLeadTime.toFixed(1)}</span></div>
+                            <div>Cancellation Rate: <span className="font-medium text-gray-800">{p.cancelRatePct.toFixed(2)}%</span></div>
+                            <div>Lead time: <span className="font-medium text-gray-800">{(p.leadTimeK / 1000).toFixed(1)}K</span></div>
+                          </div>
+                        </div>
+                      );
+                    }}
+                  />
+                  <Scatter data={data} fill="white" strokeWidth={2}>
+                    {data.map((entry, idx) => (
+                      <Cell key={idx} fill="white" stroke={entry.color || '#64748b'} strokeWidth={2} />
+                    ))}
+                  </Scatter>
+                </ScatterChart>
+              </ResponsiveContainer>
+            </div>
+          );
+        })
+      )}
+    </div>
+  );
+}
+
 interface ChannelPerformanceProps {
   onNavigateToData?: () => void;
 }
@@ -33,10 +153,10 @@ export const ChannelPerformance: React.FC<ChannelPerformanceProps> = ({ onNaviga
 
   return (
     <div className="space-y-4">
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 lg:grid-cols-[1.3fr_1fr] gap-4">
         
-        {/* LEFT COLUMN: CHARTS */}
-        <div className="space-y-4">
+        {/* LEFT COLUMN: CHARTS (30% wider for LeadTime vs Cancel) */}
+        <div className="space-y-4 min-w-0">
           
           {/* Revenue vs Commission Chart */}
           <div className="bg-white p-4 border border-gray-300 rounded shadow-sm">
@@ -70,48 +190,21 @@ export const ChannelPerformance: React.FC<ChannelPerformanceProps> = ({ onNaviga
             </div>
           </div>
 
-          {/* LeadTime vs Cancel Chart */}
+          {/* LeadTime vs Cancel – Scatter Plot Matrix (3×3) from real data */}
           <div className="bg-white p-4 border border-gray-300 rounded shadow-sm">
             <h3 className="text-sm font-semibold text-gray-700 mb-2">LeadTime vs Cancel</h3>
-            <div className="h-[240px] w-full">
-               <ResponsiveContainer width="100%" height="100%">
-                 <ScatterChart margin={{ top: 10, right: 10, bottom: 10, left: 0 }}>
-                   <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" />
-                   <XAxis 
-                      type="number" 
-                      dataKey="cancelRate" 
-                      name="Cancel Rate" 
-                      unit="%" 
-                      fontSize={11} 
-                      tickLine={false}
-                      axisLine={{stroke: '#e5e7eb'}}
-                      tickFormatter={(v) => `${(v*100).toFixed(0)}%`} 
-                      tick={{fill: '#6b7280'}}
-                   />
-                   <YAxis 
-                      type="number" 
-                      dataKey="leadTime" 
-                      name="Lead Time" 
-                      fontSize={11} 
-                      tickLine={false}
-                      axisLine={{stroke: '#e5e7eb'}}
-                      tick={{fill: '#6b7280'}}
-                      label={{ value: 'Avg. Lead Time', angle: -90, position: 'insideLeft', fontSize: 11, fill: '#9ca3af', offset: 10 }} 
-                   />
-                   <ZAxis type="number" dataKey="revenue" range={[80, 500]} />
-                   <Tooltip 
-                     contentStyle={{fontSize: '11px', borderRadius: '4px', border: '1px solid #e5e7eb'}}
-                     cursor={{ strokeDasharray: '3 3' }} 
-                   />
-                   <Scatter name="Channels" data={scatterData}>
-                      {scatterData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.color || '#8884d8'} stroke="white" strokeWidth={2} />
-                      ))}
-                   </Scatter>
-                 </ScatterChart>
-               </ResponsiveContainer>
+            <div className="h-[540px] w-full">
+              {topProblems.length === 0 ? (
+                <EmptyState
+                  title="No data"
+                  description="Import CSV in Data Management to see LeadTime vs Cancel here."
+                  actionLabel="Go to Data Management"
+                  onAction={onNavigateToData}
+                />
+              ) : (
+                <ScatterPlotMatrix data={buildMatrixFromTopProblems(topProblems)} />
+              )}
             </div>
-             <div className="text-center text-[10px] text-gray-400 mt-1 uppercase tracking-wider">Cancellation Rate</div>
           </div>
         </div>
 

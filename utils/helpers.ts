@@ -4,7 +4,6 @@ import { TopProblem } from '../types';
 export const formatCurrency = (val: number) => new Intl.NumberFormat('en-US').format(val);
 
 const EXPECTED_HEADERS = ['channel', 'rate plan', 'commission', 'revenue', 'cancel rate'];
-
 function normalizeHeader(h: string): string {
   return h.trim().toLowerCase().replace(/\s+/g, ' ');
 }
@@ -36,25 +35,34 @@ export const parseCSVString = (text: string): TopProblem[] => {
   if (!hasChannel || !hasRate || !hasCommission || !hasRevenue || !hasCancel) {
     throw new Error(`Invalid CSV header: expected "Channel, Rate Plan, Commission, Revenue, Cancel Rate" (order matters). Got: ${headerLine.slice(0, 80)}…`);
   }
+  const hasLeadTime = headerParts.length >= 6 && (headerParts[5]?.includes('lead') ?? false);
 
   return lines.slice(1).map((line, index) => {
     if (!line.trim()) return null;
     const parts = line.split(',');
     if (parts.length < 5) throw new Error(`Line ${index + 2} is missing columns (need 5).`);
-    return {
+    const row: TopProblem = {
       channel: parts[0].trim(),
       ratePlan: parts[1].trim(),
       commission: parseFloat(parts[2]) || 0,
       revenue: parseFloat(parts[3]) || 0,
       cancelRate: parseCancelRate(parts[4]),
     };
+    if (hasLeadTime && parts[5] !== undefined && parts[5].trim() !== '') {
+      const lt = parseFloat(parts[5].trim());
+      row.leadTime = Number.isNaN(lt) ? 0 : Math.max(0, lt);
+    }
+    return row;
   }).filter((item): item is TopProblem => item !== null);
 };
 
 export function exportToCSV(rows: TopProblem[]): string {
-  const header = 'Channel,Rate Plan,Commission,Revenue,Cancel Rate';
-  const body = rows.map((r) =>
-    [r.channel, r.ratePlan, r.commission, r.revenue, (r.cancelRate * 100).toFixed(2)].join(',')
-  ).join('\n');
+  const hasLeadTime = rows.some((r) => r.leadTime != null);
+  const header = hasLeadTime ? 'Channel,Rate Plan,Commission,Revenue,Cancel Rate,Lead Time' : 'Channel,Rate Plan,Commission,Revenue,Cancel Rate';
+  const body = rows.map((r) => {
+    const base = [r.channel, r.ratePlan, r.commission, r.revenue, (r.cancelRate * 100).toFixed(2)];
+    if (hasLeadTime) base.push(String(r.leadTime ?? ''));
+    return base.join(',');
+  }).join('\n');
   return header + '\n' + body;
 }

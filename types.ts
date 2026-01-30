@@ -31,6 +31,8 @@ export interface TopProblem {
   commission: number;
   revenue: number;
   cancelRate: number;
+  /** Optional: avg lead time (e.g. days). Used for LeadTime vs Cancel scatter matrix. */
+  leadTime?: number;
 }
 
 export type DatasetType = 'ratePlan' | 'country' | 'roomType';

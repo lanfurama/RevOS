@@ -62,28 +62,36 @@ export const complexTrendData = Array.from({ length: 20 }, (_, i) => {
   };
 });
 
-// 3. Top Problems Data (Matches the grid screenshot)
+// 3. Top Problems Data (Matches the grid screenshot). leadTime = avg lead time (e.g. days) for scatter matrix.
 export const topProblemsData = [
-  { channel: 'Booking.com', ratePlan: 'Package', commission: 12621, revenue: 57495, cancelRate: 0.160 },
-  { channel: 'Booking.com', ratePlan: 'BAR', commission: 46580, revenue: 227421, cancelRate: 0.198 },
-  { channel: 'Booking.com', ratePlan: 'Corporate', commission: 16498, revenue: 80551, cancelRate: 0.175 },
-  { channel: 'Booking.com', ratePlan: 'NonRefundable', commission: 27967, revenue: 136544, cancelRate: 0.131 },
-  { channel: 'Corporate', ratePlan: 'Package', commission: 19382, revenue: 94630, cancelRate: 0.211 },
-  { channel: 'Corporate', ratePlan: 'BAR', commission: 0, revenue: 83520, cancelRate: 0.151 },
-  { channel: 'Direct - Web', ratePlan: 'BAR', commission: 0, revenue: 325749, cancelRate: 0.132 },
-  { channel: 'Direct - Web', ratePlan: 'NonRefundable', commission: 0, revenue: 154215, cancelRate: 0.070 },
-  { channel: 'Expedia', ratePlan: 'BAR', commission: 17531, revenue: 92037, cancelRate: 0.219 },
-  { channel: 'Expedia', ratePlan: 'NonRefundable', commission: 10200, revenue: 53550, cancelRate: 0.140 },
+  { channel: 'Booking.com', ratePlan: 'Package', commission: 12621, revenue: 57495, cancelRate: 0.160, leadTime: 32 },
+  { channel: 'Booking.com', ratePlan: 'BAR', commission: 46580, revenue: 227421, cancelRate: 0.198, leadTime: 32 },
+  { channel: 'Booking.com', ratePlan: 'Corporate', commission: 16498, revenue: 80551, cancelRate: 0.175, leadTime: 30 },
+  { channel: 'Booking.com', ratePlan: 'NonRefundable', commission: 27967, revenue: 136544, cancelRate: 0.131, leadTime: 28 },
+  { channel: 'Corporate', ratePlan: 'Package', commission: 19382, revenue: 94630, cancelRate: 0.211, leadTime: 7 },
+  { channel: 'Corporate', ratePlan: 'BAR', commission: 0, revenue: 83520, cancelRate: 0.151, leadTime: 8 },
+  { channel: 'Direct - Web', ratePlan: 'BAR', commission: 0, revenue: 325749, cancelRate: 0.132, leadTime: 45 },
+  { channel: 'Direct - Web', ratePlan: 'NonRefundable', commission: 0, revenue: 154215, cancelRate: 0.070, leadTime: 42 },
+  { channel: 'Expedia', ratePlan: 'BAR', commission: 17531, revenue: 92037, cancelRate: 0.219, leadTime: 15 },
+  { channel: 'Expedia', ratePlan: 'NonRefundable', commission: 10200, revenue: 53550, cancelRate: 0.140, leadTime: 18 },
 ];
 
 export const scatterData = [
-  { name: 'Agoda', leadTime: 21, cancelRate: 0.22, revenue: 367329, color: '#1e3a8a' },
-  { name: 'Booking.com', leadTime: 32, cancelRate: 0.18, revenue: 527495, color: '#ea580c' },
-  { name: 'Expedia', leadTime: 15, cancelRate: 0.25, revenue: 140329, color: '#ca8a04' },
-  { name: 'Direct', leadTime: 45, cancelRate: 0.08, revenue: 587411, color: '#16a34a' },
-  { name: 'Corporate', leadTime: 7, cancelRate: 0.12, revenue: 180000, color: '#dc2626' },
-  { name: 'Wholesale', leadTime: 60, cancelRate: 0.05, revenue: 110000, color: '#9333ea' },
+  { name: 'Agoda', leadTime: 21, cancelRate: 0.22, revenue: 367329, color: '#ea580c' },
+  { name: 'Booking.com', leadTime: 32, cancelRate: 0.18, revenue: 527495, color: '#2563eb' },
+  { name: 'Expedia', leadTime: 15, cancelRate: 0.25, revenue: 140329, color: '#16a34a' },
+  { name: 'Direct', leadTime: 45, cancelRate: 0.08, revenue: 587411, color: '#dc2626' },
+  { name: 'Corporate', leadTime: 7, cancelRate: 0.12, revenue: 180000, color: '#0ea5e9' },
+  { name: 'Wholesale', leadTime: 60, cancelRate: 0.05, revenue: 110000, color: '#c026d3' },
 ];
+
+// For scatter plot matrix: Avg. Lead time (0–20), Cancellation Rate (0–20%), Lead time (0–40K)
+export const scatterMatrixData = scatterData.map((d) => ({
+  ...d,
+  avgLeadTime: Math.min(20, d.leadTime / 3),
+  cancelRatePct: Math.min(20, d.cancelRate * 100),
+  leadTimeK: Math.min(40000, d.leadTime * 650),
+}));
 
 export const globalStats = {
   totalRevenue: 2245981,

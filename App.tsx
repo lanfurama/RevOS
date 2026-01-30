@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { LayoutDashboard, BarChart3, Filter, Building2, ChevronDown, Database, Activity, Menu, X } from 'lucide-react';
+import { LayoutDashboard, BarChart3, Filter, Building2, ChevronDown, Database, Activity, Menu, X, PanelLeftClose } from 'lucide-react';
 import { ExecutiveScorecard } from './components/ExecutiveScorecard';
 import { ChannelPerformance } from './components/ChannelPerformance';
 import { DataManager } from './components/DataManager';
@@ -28,7 +28,8 @@ function setTabInUrl(tab: TabId) {
 function DashboardLayout() {
   const [activeTab, setActiveTab] = useState<'scorecard' | 'performance' | 'data'>(() => getTabFromSearch() ?? 'scorecard');
   const [propertyFilter, setPropertyFilter] = useState<PropertyFilter>(PropertyFilter.ALL);
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const isMobileMenuOpen = sidebarOpen; // alias for mobile overlay
 
   useEffect(() => {
     const onPopState = () => {
@@ -42,7 +43,7 @@ function DashboardLayout() {
   const handleTabChange = (tab: 'scorecard' | 'performance' | 'data') => {
     setActiveTab(tab);
     setTabInUrl(tab);
-    setIsMobileMenuOpen(false);
+    setSidebarOpen(false);
   };
 
   const getPageTitle = () => {
@@ -58,18 +59,18 @@ function DashboardLayout() {
     <div className="min-h-screen bg-gray-100 flex font-sans text-gray-900 overflow-hidden">
       
       {/* Mobile Overlay */}
-      {isMobileMenuOpen && (
+      {sidebarOpen && (
         <div 
           className="fixed inset-0 bg-black/50 z-30 md:hidden"
-          onClick={() => setIsMobileMenuOpen(false)}
+          onClick={() => setSidebarOpen(false)}
         />
       )}
 
-      {/* Sidebar - Responsive */}
+      {/* Sidebar - Toggleable */}
       <aside className={`
-        fixed inset-y-0 left-0 z-40 w-64 bg-slate-900 text-gray-300 transform transition-transform duration-300 ease-in-out border-r border-slate-800
-        md:translate-x-0 md:w-56
-        ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}
+        fixed inset-y-0 left-0 z-40 w-64 bg-slate-900 text-gray-300 transform border-r border-slate-800
+        md:w-56
+        ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
       `}>
         <div className="h-14 px-4 border-b border-slate-800 flex items-center justify-between bg-slate-950">
           <div className="flex items-center gap-2">
@@ -78,13 +79,20 @@ function DashboardLayout() {
             </div>
             <span className="text-lg font-bold tracking-widest text-white uppercase font-sans">RevOS</span>
           </div>
-          {/* Close button for mobile */}
+          {/* Close on mobile / Collapse on desktop */}
           <button 
-            onClick={() => setIsMobileMenuOpen(false)}
-            className="md:hidden text-gray-400 hover:text-white"
+            onClick={() => setSidebarOpen(false)}
+            className="md:hidden text-gray-400 hover:text-white p-1"
             aria-label="Close menu"
           >
             <X size={20} aria-hidden />
+          </button>
+          <button 
+            onClick={() => setSidebarOpen(false)}
+            className="hidden md:flex text-gray-400 hover:text-white p-1 rounded hover:bg-slate-800"
+            aria-label="Collapse sidebar"
+          >
+            <PanelLeftClose size={20} aria-hidden />
           </button>
         </div>
 
@@ -135,19 +143,21 @@ function DashboardLayout() {
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 flex flex-col min-w-0 transition-all duration-300 md:ml-56 h-screen">
+      <main className={`flex-1 flex flex-col min-w-0 h-screen ${sidebarOpen ? 'md:ml-56' : 'md:ml-0'}`}>
         
         {/* Top Header */}
         <header className="h-14 bg-white border-b border-gray-300 sticky top-0 z-20 flex items-center justify-between px-4 md:px-6 shadow-sm flex-shrink-0">
           <div className="flex items-center gap-3">
-             {/* Mobile Menu Button */}
-             <button 
-               onClick={() => setIsMobileMenuOpen(true)}
-               className="md:hidden p-1 -ml-1 text-gray-600 hover:bg-gray-100 rounded"
-               aria-label="Open menu"
-             >
-               <Menu size={20} aria-hidden />
-             </button>
+             {/* Open sidebar (when closed) */}
+             {!sidebarOpen && (
+               <button 
+                 onClick={() => setSidebarOpen(true)}
+                 className="p-1 -ml-1 text-gray-600 hover:bg-gray-100 rounded"
+                 aria-label="Open sidebar"
+               >
+                 <Menu size={20} aria-hidden />
+               </button>
+             )}
 
              <div className="flex items-center gap-2 text-sm text-gray-600">
                <span className="font-semibold text-gray-900 hidden sm:inline">Dashboard</span>
@@ -166,8 +176,8 @@ function DashboardLayout() {
                 aria-label="Select property"
               >
                 <option value={PropertyFilter.ALL}>All Properties</option>
-                <option value={PropertyFilter.P001}>Seaside Da Nang</option>
-                <option value={PropertyFilter.P002}>City Center Hotel</option>
+                <option value={PropertyFilter.P001}>Furama Resort Danang</option>
+                <option value={PropertyFilter.P002}>Furama Villas Danang</option>
               </select>
               <ChevronDown size={12} className="text-gray-400 flex-shrink-0 hidden sm:block" />
             </div>
